@@ -171,6 +171,22 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
         }
 
+        /* תיבת התראה על תשלום במזומן */
+        .alert-box {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            font-weight: 700;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+
         /* גריד מוצרים (דף הבית) */
         .products-grid {
             display: grid;
@@ -578,6 +594,7 @@
                 </div>
                 <div class="summary-card">
                     <h3>סיכום הזמנה</h3>
+                    <p style="color: #856404; font-size: 0.9em; font-weight: bold;">* התשלום במזומן בלבד בעת קבלת ההזמנה</p>
                     <hr style="border-color: var(--primary-light)">
                     <p style="display:flex; justify-content:space-between; font-size:1.2em;">
                         <span>סה"כ פריטים:</span>
@@ -594,6 +611,12 @@
 
         <section id="page-checkout" class="page-view">
             <h2>פרטי משלוח וסיום הזמנה 📦</h2>
+            
+            <div class="alert-box">
+                <span>💵</span>
+                <span><strong>שימו לב:</strong> חנות זו מקבלת תשלום ב<strong>מזומן בלבד</strong> בעת איסוף או קבלת הסקווישי. נא להכין סכום מדויק!</span>
+            </div>
+
             <div class="product-page-layout">
                 <div class="details-holder">
                     <div class="form-group">
@@ -645,7 +668,7 @@
                         <p id="statOrders">0</p>
                     </div>
                     <div class="stat-box">
-                        <h4>הכנסות (ש"ח)</h4>
+                        <h4>הכנסות במזומן (ש"ח)</h4>
                         <p id="statRevenue">0</p>
                     </div>
                     <div class="stat-box">
@@ -685,7 +708,6 @@
     </footer>
 
     <script type="module">
-        // 1. ייבוא ספריות Firebase Web SDK (גרסה 10)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -701,14 +723,10 @@
             appId: "1:357383169447:web:34e642a5c276f2d0480282",
         };
 
-        // אתחול החיבור ל-Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // שמירת רכיבי פיירבייס על אובייקט ה-window כדי שנוכל לגשת אליהם מכל מקום
         window.db = db;
 
-        // דאטה בסיסית של מוצרים (איפסנו את התגובות!)
         const productsData = [
             {
                 id: 1,
@@ -774,12 +792,10 @@
             }
         ];
 
-        // מצב האפליקציה (State)
         let cart = JSON.parse(localStorage.getItem('squishy_cart')) || [];
         let favorites = JSON.parse(localStorage.getItem('squishy_favs')) || [];
         let activeProductId = null;
 
-        // --- פונקציות ניווט ותצוגה ---
         window.showPage = function(pageId) {
             document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
             document.getElementById(`page-${pageId}`).classList.add('active');
@@ -791,7 +807,6 @@
             if(pageId === 'admin') window.renderAdminPanel();
         };
 
-        // הגשת קטלוג מוצרים
         function renderCatalog(products) {
             const grid = document.getElementById('catalogGrid');
             if (products.length === 0) {
@@ -815,7 +830,6 @@
             }).join('');
         }
 
-        // 1. פתיחת דף מוצר - משיכת ביקורות בזמן אמת מ-Firebase
         window.openProductPage = async function(id) {
             const product = productsData.find(p => p.id === id);
             activeProductId = id;
@@ -869,7 +883,6 @@
                 </div>
             `;
 
-            // שליפת הביקורות של המוצר הספציפי מ-Firebase
             try {
                 const querySnapshot = await getDocs(collection(db, "reviews"));
                 let productReviews = [];
@@ -924,7 +937,6 @@
             return price;
         };
 
-        // הוספה לעגלה
         window.addToCart = function() {
             const product = productsData.find(p => p.id === activeProductId);
             const design = document.getElementById('customDesign').value.trim();
@@ -954,7 +966,6 @@
             window.showPage('home');
         };
 
-        // הצגת עגלת קניות
         function renderCart() {
             const container = document.getElementById('cartItemsList');
             if(cart.length === 0) {
@@ -1033,24 +1044,24 @@
 
             const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
 
-            // בניית אובייקט הזמנה קשיח לענן
             const newOrder = {
                 customerName: name,
                 customerPhone: phone,
                 items: [...cart],
                 notes: notes || 'אין הערות',
                 totalPrice: totalPrice,
+                paymentMethod: "מזומן", // מצוין במסמך פיירבייס
                 createdAt: new Date().toISOString()
             };
 
             try {
-                // שמירה באוסף orders בתוך ה-Firestore Cloud
                 await addDoc(collection(window.db, "orders"), newOrder);
 
-                // בניית ההודעה לוואטסאפ
+                // בניית ההודעה לוואטסאפ (כולל שורת תשלום במזומן)
                 let whatsappText = `היי! הגעת הזמנה חדשה מ*סקווישי סמאש* ✨\n\n`;
                 whatsappText += `👤 *שם לקוח:* ${name}\n`;
                 whatsappText += `📞 *טלפון:* ${phone}\n`;
+                whatsappText += `💵 *אופן תשלום:* מזומן בלבד (נא להכין סכום מדויק)\n`;
                 whatsappText += `📝 *הערות:* ${notes || 'אין'}\n\n`;
                 whatsappText += `🛒 *פירוט הפריטים:*\n`;
                 cart.forEach((item, i) => {
@@ -1060,10 +1071,8 @@
                 whatsappText += `כל הזכויות שמורות ל-ilays ©`;
 
                 const encodedText = encodeURIComponent(whatsappText);
-                // פתיחת וואטסאפ עם המספר הישיר שלך!
                 window.open(`https://api.whatsapp.com/send?phone=972509088715&text=${encodedText}`, '_blank');
 
-                // איפוס עגלה מקומית
                 cart = [];
                 localStorage.setItem('squishy_cart', JSON.stringify(cart));
                 updateBadges();
@@ -1076,7 +1085,6 @@
             }
         };
 
-        // 2. הוספת ביקורת חדשה - שמירה ישירה ב-Firebase בענן
         window.addNewReview = async function() {
             const text = document.getElementById('newReviewText').value.trim();
             if(!text) return;
@@ -1090,13 +1098,9 @@
             };
 
             try {
-                // שמירה באוסף חדש בענן שנקרא "reviews"
                 await addDoc(collection(db, "reviews"), newReview);
-                
                 document.getElementById('newReviewText').value = '';
                 alert('הביקורת שלך פורסמה בהצלחה וזמינה כעת לכולם! 🎉');
-                
-                // טעינה מחדש של הדף כדי להציג את הביקורת החדשה מהענן
                 window.openProductPage(activeProductId);
             } catch (error) {
                 console.error("Error saving review:", error);
@@ -1104,7 +1108,6 @@
             }
         };
 
-        // מועדפים
         window.toggleFavorite = function(id, element) {
             if(favorites.includes(id)) {
                 favorites = favorites.filter(favId => favId !== id);
@@ -1158,7 +1161,6 @@
             renderCatalog(filtered);
         };
 
-        // --- לוגיקת פאנל ניהול מבוסס פיירבייס ---
         window.loginAdmin = function() {
             const user = document.getElementById('adminUser').value;
             const pass = document.getElementById('adminPass').value;
@@ -1176,7 +1178,6 @@
             window.showPage('home');
         };
 
-        // משיכת נתונים בזמן אמת מתוך מסד הנתונים בענן לטבלה של המנהל
         window.renderAdminPanel = async function() {
             const tbody = document.getElementById('adminOrdersTable');
             tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">טוען הזמנות חיות מהענן... ⏳</td></tr>`;
@@ -1197,12 +1198,10 @@
                     return;
                 }
 
-                // חישוב נתונים וסטטיסטיקה מתוך הענן
                 document.getElementById('statOrders').innerText = cloudOrders.length;
                 document.getElementById('statRevenue').innerText = cloudOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
                 document.getElementById('statItems').innerText = cloudOrders.reduce((sum, o) => sum + (o.items ? o.items.length : 0), 0);
 
-                // רינדור הטבלה
                 tbody.innerHTML = cloudOrders.map(order => {
                     const itemsDetails = order.items ? order.items.map(i => `• ${i.name} (${i.design}) ${i.isCrunchy ? '[קראנצ\'י]' : ''}`).join('<br>') : 'אין פירוט';
                     return `
@@ -1224,13 +1223,12 @@
             }
         };
 
-        // מחיקת מסמך הזמנה ישירות מה-Cloud Server
         window.deleteCloudOrder = async function(firebaseId) {
             if(confirm('האם אתה בטוח שברצונך למחוק הזמנה זו לצמיתות משרתי Firebase?')) {
                 try {
                     await deleteDoc(doc(window.db, "orders", firebaseId));
                     alert("ההזמנה נמחקה לחלוטין מהענן! 🔥");
-                    window.renderAdminPanel(); // רענון מהיר של הטבלה
+                    window.renderAdminPanel();
                 } catch (error) {
                     console.error("Error deleting document: ", error);
                     alert("שגיאה במחיקת המסמך מהענן.");
@@ -1238,7 +1236,6 @@
             }
         };
 
-        // אתחול דף הבית
         renderCatalog(productsData);
         updateBadges();
     </script>
