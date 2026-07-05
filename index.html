@@ -519,15 +519,38 @@
             font-weight: bold;
         }
 
-        /* תחתית האתר (Footer) */
+        /* תחתית האתר (Footer) החדשה והמתוקנת */
         footer {
             background-color: var(--card-bg);
-            text-align: center;
             padding: 20px;
             margin-top: 50px;
             border-top: 2px solid var(--primary-light);
             font-size: 1.1em;
             font-weight: 600;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 800;
+            background-color: var(--primary-light);
+            padding: 3px 12px;
+            border-radius: 15px;
+            transition: var(--transition);
+        }
+
+        .footer-link:hover {
+            background-color: var(--accent);
+            color: white;
+            transform: translateY(-2px);
         }
 
         /* רספונסיביות מלאה למובייל */
@@ -704,7 +727,14 @@
     </main>
 
     <footer>
-        כל הזכויות שמורות ל-ilays © | סקווישי סמאש - Squishy Smash
+        <div class="footer-content">
+            <span>כל הזכויות שמורות ל-</span>
+            <a href="https://ilayavrahami.github.io/ilays/" target="_blank" class="footer-link">ilays</a>
+            <span>©</span>
+            <span>|</span>
+            <span style="font-family: 'Fredoka One', cursive; color: var(--accent);">Squishy Smash</span>
+            <span>- סקווישי סמאש</span>
+        </div>
     </footer>
 
     <script type="module">
@@ -1025,9 +1055,6 @@
             document.getElementById('summaryTotal').innerText = total;
         }
 
-        // ==========================================
-        // 3. שליחת הזמנה ושמירה ב-FIREBASE FIRESTORE
-        // ==========================================
         window.submitFinalOrder = async function() {
             const name = document.getElementById('orderName').value.trim();
             const phone = document.getElementById('orderPhone').value.trim();
@@ -1050,14 +1077,13 @@
                 items: [...cart],
                 notes: notes || 'אין הערות',
                 totalPrice: totalPrice,
-                paymentMethod: "מזומן", // מצוין במסמך פיירבייס
+                paymentMethod: "מזומן",
                 createdAt: new Date().toISOString()
             };
 
             try {
                 await addDoc(collection(window.db, "orders"), newOrder);
 
-                // בניית ההודעה לוואטסאפ (כולל שורת תשלום במזומן)
                 let whatsappText = `היי! הגעת הזמנה חדשה מ*סקווישי סמאש* ✨\n\n`;
                 whatsappText += `👤 *שם לקוח:* ${name}\n`;
                 whatsappText += `📞 *טלפון:* ${phone}\n`;
